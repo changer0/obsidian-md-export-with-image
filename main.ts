@@ -1,4 +1,4 @@
-import { App, Editor, FileSystemAdapter, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
+import { App, Editor, FileSystemAdapter, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile, addIcon } from 'obsidian';
 
 // 导入 Node.js 的 fs 和 path 模块
 import * as fs from 'fs';
@@ -8,11 +8,11 @@ import { connect } from 'http2';
 // Remember to rename these classes and interfaces!
 
 interface MyPluginSettings {
-	quality: number | undefined;//undefined
+	hasIcon: boolean;//false
 }
 
 const DEFAULT_SETTINGS: MyPluginSettings = {
-	quality: 0.5
+	hasIcon: false
 }
 
 export default class MyPlugin extends Plugin {
@@ -31,9 +31,11 @@ export default class MyPlugin extends Plugin {
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		//this.addSettingTab(new SettingTab(this.app, this));
 
+		addIcon("md-export-with-image", `<svg t="1705228466791" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5454" width="100" height="100"><path d="M313.6 801.6v-102.4L512 838.4l-198.4 139.2v-100.8C128 827.2 0 710.4 0 572.8c1.6-67.2 30.4-129.6 78.4-176 12.8-14.4 36.8-14.4 51.2-1.6 14.4 14.4 14.4 36.8 0 51.2-35.2 32-56 78.4-57.6 126.4 0 96 96 185.6 241.6 228.8zM627.2 892.8c-19.2 3.2-36.8-9.6-40-28.8-3.2-19.2 9.6-38.4 28.8-41.6h1.6c196.8-28.8 334.4-134.4 334.4-249.6-1.6-46.4-20.8-89.6-54.4-121.6-14.4-14.4-14.4-36.8 0-51.2 6.4-6.4 16-11.2 25.6-11.2 9.6 0 19.2 3.2 25.6 11.2 46.4 44.8 73.6 107.2 75.2 171.2 0 158.4-168 288-396.8 321.6z" fill="#bfbfbf" p-id="5455"></path><path d="M313.6 801.6v-102.4L512 838.4l-198.4 139.2v-100.8C128 827.2 0 710.4 0 572.8c1.6-67.2 30.4-129.6 78.4-176 12.8-14.4 36.8-14.4 51.2-1.6 14.4 14.4 14.4 36.8 0 51.2-35.2 32-56 78.4-57.6 126.4 0 96 96 185.6 241.6 228.8zM627.2 892.8c-19.2 3.2-36.8-9.6-40-28.8-3.2-19.2 9.6-38.4 28.8-41.6h1.6c196.8-28.8 334.4-134.4 334.4-249.6-1.6-46.4-20.8-89.6-54.4-121.6-14.4-14.4-14.4-36.8 0-51.2 6.4-6.4 16-11.2 25.6-11.2 9.6 0 19.2 3.2 25.6 11.2 46.4 44.8 73.6 107.2 75.2 171.2 0 158.4-168 288-396.8 321.6z" fill="#bfbfbf" p-id="5456"></path><path d="M766.4 48H257.6c-27.2 0-48 22.4-48 48v424c0 27.2 22.4 48 48 48h508.8c27.2 0 48-22.4 48-48V97.6c0-27.2-20.8-49.6-48-49.6z m0 472H257.6v-144l124.8-128 147.2 182.4c8 9.6 22.4 11.2 32 4.8l108.8-73.6 96 44.8v113.6z m0-176l-80-33.6c-8-6.4-19.2-6.4-28.8-1.6l-105.6 70.4-150.4-185.6c-4.8-4.8-11.2-8-17.6-8-6.4 0-12.8 3.2-17.6 8l-108.8 112v-208h508.8v246.4z m-128-196.8c-38.4 0-68.8 30.4-68.8 68.8s30.4 68.8 68.8 68.8 68.8-30.4 68.8-68.8c-1.6-38.4-32-68.8-68.8-68.8z m0 88c-11.2 0-19.2-9.6-19.2-19.2 0-11.2 9.6-19.2 19.2-19.2 11.2 0 19.2 8 19.2 19.2 0 9.6-9.6 19.2-19.2 19.2z m0 0" fill="#bfbfbf" p-id="5457"></path></svg>`);
+
 		// 调用 this.addRibbonIcon 方法，添加一个图标到侧边栏
 		this.ribbonIconEl = this.addRibbonIcon(
-			'dice', // 图标的名字，你可以自己选择或使用自定义的图标文件
+			'md-export-with-image', // 图标的名字，你可以自己选择或使用自定义的图标文件
 			'点击复制转换后的MD内容到剪切板', // 图标的提示信息，当鼠标悬停在图标上时显示
 			async () => {
 				log('点击导出按钮');
@@ -44,7 +46,17 @@ export default class MyPlugin extends Plugin {
 		//按钮可用状态
 		this.ribbonIconEl.classList.add('is-enabled');
 
-		//this.addCommand())
+
+		//开启命令
+		this.addCommand({
+			id: "md-export-with-image",
+			name: "Export MD With Image",
+			callback: () => {
+				//console.log("Hey, you!");
+				log('command called !');
+				this.convertAndCopyToClipboard()
+			},
+		});
 	}
 
 	// 转换MD文件并复制到剪切板
@@ -56,6 +68,7 @@ export default class MyPlugin extends Plugin {
 		// 如果没有激活的文件，或者激活的文件不是 Markdown 格式，直接返回
 		if (!view) {
 			log('当前文件不是 Markdown 文件')
+			new Notice("前在 Markdown 文件下执行！")
 			return;
 		}
 
