@@ -9,10 +9,12 @@ import { connect } from 'http2';
 
 interface MyPluginSettings {
 	hasIcon: boolean;//false
+	needImageDesc: boolean;//true
 }
 
 const DEFAULT_SETTINGS: MyPluginSettings = {
-	hasIcon: false
+	hasIcon: false,
+	needImageDesc: true
 }
 
 export default class MyPlugin extends Plugin {
@@ -29,9 +31,10 @@ export default class MyPlugin extends Plugin {
 		await this.loadSettings();
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		//this.addSettingTab(new SettingTab(this.app, this));
+		this.addSettingTab(new SettingTab(this.app, this));
 
-		addIcon("md-export-with-image", `<svg t="1705228466791" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5454" width="100" height="100"><path d="M313.6 801.6v-102.4L512 838.4l-198.4 139.2v-100.8C128 827.2 0 710.4 0 572.8c1.6-67.2 30.4-129.6 78.4-176 12.8-14.4 36.8-14.4 51.2-1.6 14.4 14.4 14.4 36.8 0 51.2-35.2 32-56 78.4-57.6 126.4 0 96 96 185.6 241.6 228.8zM627.2 892.8c-19.2 3.2-36.8-9.6-40-28.8-3.2-19.2 9.6-38.4 28.8-41.6h1.6c196.8-28.8 334.4-134.4 334.4-249.6-1.6-46.4-20.8-89.6-54.4-121.6-14.4-14.4-14.4-36.8 0-51.2 6.4-6.4 16-11.2 25.6-11.2 9.6 0 19.2 3.2 25.6 11.2 46.4 44.8 73.6 107.2 75.2 171.2 0 158.4-168 288-396.8 321.6z" fill="#bfbfbf" p-id="5455"></path><path d="M313.6 801.6v-102.4L512 838.4l-198.4 139.2v-100.8C128 827.2 0 710.4 0 572.8c1.6-67.2 30.4-129.6 78.4-176 12.8-14.4 36.8-14.4 51.2-1.6 14.4 14.4 14.4 36.8 0 51.2-35.2 32-56 78.4-57.6 126.4 0 96 96 185.6 241.6 228.8zM627.2 892.8c-19.2 3.2-36.8-9.6-40-28.8-3.2-19.2 9.6-38.4 28.8-41.6h1.6c196.8-28.8 334.4-134.4 334.4-249.6-1.6-46.4-20.8-89.6-54.4-121.6-14.4-14.4-14.4-36.8 0-51.2 6.4-6.4 16-11.2 25.6-11.2 9.6 0 19.2 3.2 25.6 11.2 46.4 44.8 73.6 107.2 75.2 171.2 0 158.4-168 288-396.8 321.6z" fill="#bfbfbf" p-id="5456"></path><path d="M766.4 48H257.6c-27.2 0-48 22.4-48 48v424c0 27.2 22.4 48 48 48h508.8c27.2 0 48-22.4 48-48V97.6c0-27.2-20.8-49.6-48-49.6z m0 472H257.6v-144l124.8-128 147.2 182.4c8 9.6 22.4 11.2 32 4.8l108.8-73.6 96 44.8v113.6z m0-176l-80-33.6c-8-6.4-19.2-6.4-28.8-1.6l-105.6 70.4-150.4-185.6c-4.8-4.8-11.2-8-17.6-8-6.4 0-12.8 3.2-17.6 8l-108.8 112v-208h508.8v246.4z m-128-196.8c-38.4 0-68.8 30.4-68.8 68.8s30.4 68.8 68.8 68.8 68.8-30.4 68.8-68.8c-1.6-38.4-32-68.8-68.8-68.8z m0 88c-11.2 0-19.2-9.6-19.2-19.2 0-11.2 9.6-19.2 19.2-19.2 11.2 0 19.2 8 19.2 19.2 0 9.6-9.6 19.2-19.2 19.2z m0 0" fill="#bfbfbf" p-id="5457"></path></svg>`);
+		//https://www.iconfont.cn/ 100*100
+		addIcon("md-export-with-image", `<svg t="1705228466791" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5454" width="100" height="100"><path d="M313.6 801.6v-102.4L512 838.4l-198.4 139.2v-100.8C128 827.2 0 710.4 0 572.8c1.6-67.2 30.4-129.6 78.4-176 12.8-14.4 36.8-14.4 51.2-1.6 14.4 14.4 14.4 36.8 0 51.2-35.2 32-56 78.4-57.6 126.4 0 96 96 185.6 241.6 228.8zM627.2 892.8c-19.2 3.2-36.8-9.6-40-28.8-3.2-19.2 9.6-38.4 28.8-41.6h1.6c196.8-28.8 334.4-134.4 334.4-249.6-1.6-46.4-20.8-89.6-54.4-121.6-14.4-14.4-14.4-36.8 0-51.2 6.4-6.4 16-11.2 25.6-11.2 9.6 0 19.2 3.2 25.6 11.2 46.4 44.8 73.6 107.2 75.2 171.2 0 158.4-168 288-396.8 321.6z" fill="#bfbfbf" p-id="5455"></path><path d="M313.6 801.6v-102.4L512 838.4l-198.4 139.2v-100.8C128 827.2 0 710.4 0 572.8c1.6-67.2 30.4-129.6 78.4-176 12.8-14.4 36.8-14.4 51.2-1.6 14.4 14.4 14.4 36.8 0 51.2-35.2 32-56 78.4-57.6 126.4 0 96 96 185.6 241.6 228.8zM627.2 892.8c-19.2 3.2-36.8-9.6-40-28.8-3.2-19.2 9.6-38.4 28.8-41.6h1.6c196.8-28.8 334.4-134.4 334.4-249.6-1.6-46.4-20.8-89.6-54.4-121.6-14.4-14.4-14.4-36.8 0-51.2 6.4-6.4 16-11.2 25.6-11.2 9.6 0 19.2 3.2 25.6 11.2 46.4 44.8 73.6 107.2 75.2 171.2 0 158.4-168 288-396.8 321.6z" fill="#bfbfbf" p-id="5456"></path><path d="M766.4 48H257.6c-27.2 0-48 22.4-48 48v424c0 27.2 22.4 48 48 48h508.8c27.2 0 48-22.4 48-48V97.6c0-27.2-20.8-49.6-48-49.6z m0 472H257.6v-144l124.8-128 147.2 182.4c8 9.6 22.4 11.2 32 4.8l108.8-73.6 96 44.8v113.6z m0-176l-80-33.6c-8-6.4-19.2-6.4-28.8-1.6l-105.6 70.4-150.4-185.6c-4.8-4.8-11.2-8-17.6-8-6.4 0-12.8 3.2-17.6 8l-108.8 112v-208h508.8v246.4z m-128-196.8c-38.4 0-68.8 30.4-68.8 68.8s30.4 68.8 68.8 68.8 68.8-30.4 68.8-68.8c-1.6-38.4-32-68.8-68.8-68.8z m0 88c-11.2 0-19.2-9.6-19.2-19.2 0-11.2 9.6-19.2 19.2-19.2 11.2 0 19.2 8 19.2 19.2 0 9.6-9.6 19.2-19.2 19.2z m0 0" fill="currentColor" p-id="5457"></path></svg>`);
 
 		// 调用 this.addRibbonIcon 方法，添加一个图标到侧边栏
 		this.ribbonIconEl = this.addRibbonIcon(
@@ -46,11 +49,12 @@ export default class MyPlugin extends Plugin {
 		//按钮可用状态
 		this.ribbonIconEl.classList.add('is-enabled');
 
+		this.settings.hasIcon ? this.ribbonIconEl.show() : this.ribbonIconEl.hide();
 
 		//开启命令
 		this.addCommand({
 			id: "md-export-with-image",
-			name: "Export MD With Image",
+			name: "Copy To Clipboard MD With Image",
 			callback: () => {
 				//console.log("Hey, you!");
 				log('command called !');
@@ -137,10 +141,12 @@ export default class MyPlugin extends Plugin {
 		const buffer = fs.readFileSync(filepath);
 		// 将图片文件的内容转换为 Base64 编码
 		const base64 = buffer.toString('base64');
+		//图片描述
+		const desc = this.settings.needImageDesc ? match[1] : ""
 		// 将文件内容中的 ![[xxx.png]] 替换为 !xxx.png
 		content = content.replace(
 			match[0],
-			`![${match[1]}](data:image/png;base64,${base64})` // 注意这里的反引号，它是字符串模板的标志
+			`![${desc}](data:image/png;base64,${base64})` // 注意这里的反引号，它是字符串模板的标志
 		);
 		log('图片完成 Base64 转换，length: ' + base64.length);
 		return content
@@ -171,10 +177,12 @@ export default class MyPlugin extends Plugin {
 		const buffer = fs.readFileSync(filepath);
 		// 将图片文件的内容转换为 Base64 编码
 		const base64 = buffer.toString('base64');
+		//图片描述
+		const desc = this.settings.needImageDesc ? filename : ""
 		// 将文件内容中的 ![[xxx.png]] 替换为 !xxx.png
 		content = content.replace(
 			match[0],
-			`![${filename}](data:image/png;base64,${base64})` // 注意这里的反引号，它是字符串模板的标志
+			`![${desc}](data:image/png;base64,${base64})` // 注意这里的反引号，它是字符串模板的标志
 		);
 		log('图片完成 Base64 转换，length: ' + base64.length);
 		return content
@@ -223,10 +231,31 @@ class SettingTab extends PluginSettingTab {
 		// 				new Notice("参数类型不合法！")
 		// 				return;
 		// 			}
-
 		// 			this.plugin.settings.convertSize = value === "" ? DEFAULT_SETTINGS.convertSize : tempValue;
 		// 			await this.plugin.saveSettings();
 		// 		}));
+
+
+		new Setting(containerEl)
+			.setName('展示图标')
+			.setDesc('是否展示复制到Markdown文件到剪切板的图标')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.hasIcon)
+				.onChange(async (value) => {
+					this.plugin.settings.hasIcon = value;
+					value ? this.plugin.ribbonIconEl.show() : this.plugin.ribbonIconEl.hide()
+					await this.plugin.saveSettings();
+				}))
+
+		new Setting(containerEl)
+			.setName('是否需要图片描述')
+			.setDesc('如果需要则使用原描述，针对Wiki模式则使用文件名作为描述')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.needImageDesc)
+				.onChange(async (value) => {
+					this.plugin.settings.needImageDesc = value;
+					await this.plugin.saveSettings();
+				}))
 	}
 }
 
