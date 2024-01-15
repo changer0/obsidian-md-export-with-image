@@ -6,7 +6,7 @@ on:
       - "*"
 
 env:
-  PLUGIN_NAME: image-compress # Change this to match the id of your plugin.
+  PLUGIN_NAME: md-export-with-image # Change this to match the id of your plugin.
 
 jobs:
   build:
