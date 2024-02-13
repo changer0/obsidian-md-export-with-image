@@ -3,6 +3,10 @@ import { App, Editor, FileSystemAdapter, MarkdownView, Modal, Notice, Plugin, Pl
 // 导入 Node.js 的 fs 和 path 模块
 import * as fs from 'fs';
 import { connect } from 'http2';
+import { ServerProcessor } from './ServerProcessor';
+import { PlantUMLProcessor } from './PlantUMLProcessor';
+import { Replacer } from './functions';
+import { LocalProcessor } from './LocalProcessor';
 // import path from 'path';
 
 // Remember to rename these classes and interfaces!
@@ -10,11 +14,20 @@ import { connect } from 'http2';
 interface MyPluginSettings {
 	hasIcon: boolean;//false
 	needImageDesc: boolean;//true
+	plantUmlServerUrl: string;
+	// Local UML 配置
+	javaPath: string;
+	dotPath: string;
+	localJar: string;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
+export const DEFAULT_SETTINGS: MyPluginSettings = {
 	hasIcon: false,
-	needImageDesc: true
+	needImageDesc: true,
+	plantUmlServerUrl: "https://www.plantuml.com/plantuml",
+	localJar: '/Users/lemon/soft/plantuml/plantuml.jar',
+    javaPath: 'java',
+    dotPath: 'dot',
 }
 
 export default class MyPlugin extends Plugin {
@@ -26,10 +39,20 @@ export default class MyPlugin extends Plugin {
 	// 定义一个属性，用于存储图标的元素
 	ribbonIconEl: HTMLElement;
 
+	// Server UML Processor
+	umlProcessor: PlantUMLProcessor;
+	// Local UML Processor
+	localProcess: PlantUMLProcessor;
+
+	replacer: Replacer;
+	
 	async onload() {
 		let that = this
 		await this.loadSettings();
+		this.replacer = new Replacer(this);
 
+		// this.serverProcessor = new ServerProcessor(this);
+		this.umlProcessor = new LocalProcessor(this);
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SettingTab(this.app, this));
 
@@ -65,6 +88,8 @@ export default class MyPlugin extends Plugin {
 
 	// 转换MD文件并复制到剪切板
 	async convertAndCopyToClipboard() {
+		new Notice('正在转码中，请稍等...');
+
 		// 获取当前激活的文件的视图
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
 
@@ -78,16 +103,28 @@ export default class MyPlugin extends Plugin {
 
 		// 获取当前激活的文件的内容，你可以选择使用 Markdown 源码或渲染后的文本
 		let content = view.data; // Markdown 源码
+
 		//正则
 		let match;
+
+		const regex = /```puml\n([\s\S]*?)\n```/g;
+
+		// 先经过 PlantUML 处理一遍
+		while ((match = regex.exec(content)) !== null) {
+			content = await this.replacePlantUML(
+				view,
+				content,
+				match
+			)
+		}
 
 
 		//这是针对非标准的 Wiki 形式的图片
 		// 使用正则表达式，匹配文件内容中的 [[xxx.png]] 格式的内容
-		const regex = /!\[\[(.+?\.(png|jpg|jpeg))\]\]/g;
+		const regex1 = /!\[\[(.+?\.(png|jpg|jpeg))\]\]/g;
 
 		// 对于每一个匹配的结果 进行处理
-		while ((match = regex.exec(content)) !== null) {
+		while ((match = regex1.exec(content)) !== null) {
 			content = this.replaceMDConentWiki(
 				view,
 				content,
@@ -106,10 +143,42 @@ export default class MyPlugin extends Plugin {
 				match,
 			)
 		}
+
+
 		// 将替换后的文件内容复制到粘贴板中
 		await navigator.clipboard.writeText(content);
 		// 弹出一个通知，提示用户已经复制成功
 		new Notice('已复制到剪切板🍺🍺🍺');
+	}
+
+	/**
+	 * 替换 PlantUML 的内容
+	 * 
+	 * @param view 
+	 * @param content 
+	 * @param match 
+	 */
+	async replacePlantUML(view: MarkdownView, content: string, match: RegExpExecArray) : Promise<string> {
+		// console.log("match[0]: " + match[0]);
+		let plantumlContent =  match[1];
+		log("replacePlantUML plantumlContent: \n" + plantumlContent);
+		// console.log("match[2]: " + match[2]);
+		let convertContent = await this.umlProcessor.png(plantumlContent);
+
+		let image = ``;
+		
+		if (convertContent.startsWith("http")) {
+			image = `![](${convertContent})`;
+		} else {
+			image = `![](data:image/png;base64,${convertContent})`;
+		}
+		
+		content = content.replace(
+			match[0],
+			image // 注意这里的反引号，它是字符串模板的标志
+		);
+		//替换时使用 match[0]
+		return content;
 	}
 
 	/**
@@ -261,6 +330,11 @@ class SettingTab extends PluginSettingTab {
 
 //当前日志
 function log(msg: string) {
+	//TODO 临时
+	if (!msg.contains("replacePlantUML")) {
+		return;
+	}
+	//TODO 临时
 	console.log("MD_EXPORT: " + msg)
 }
 //获取Byte

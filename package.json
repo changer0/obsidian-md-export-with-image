@@ -24,6 +24,9 @@
 	"dependencies": {
 		"fs": "^0.0.1-security",
 		"image-compressor.js": "^1.1.4",
-		"path": "^0.12.7"
+		"path": "^0.12.7",
+		"@types/plantuml-encoder": "^1.4.0",
+		"plantuml-encoder": "^1.4.0",
+		"localforage": "1.10.0"
 	}
 }
