@@ -25,9 +25,9 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	hasIcon: false,
 	needImageDesc: true,
 	plantUmlServerUrl: "https://www.plantuml.com/plantuml",
-	localJar: '/Users/lemon/soft/plantuml/plantuml.jar',
-    javaPath: 'java',
-    dotPath: 'dot',
+	localJar: '',
+	javaPath: 'java',
+	dotPath: 'dot',
 }
 
 export default class MyPlugin extends Plugin {
@@ -40,19 +40,18 @@ export default class MyPlugin extends Plugin {
 	ribbonIconEl: HTMLElement;
 
 	// Server UML Processor
-	umlProcessor: PlantUMLProcessor;
+	serverProcessor: PlantUMLProcessor;
 	// Local UML Processor
 	localProcess: PlantUMLProcessor;
 
 	replacer: Replacer;
-	
+
 	async onload() {
 		let that = this
 		await this.loadSettings();
 		this.replacer = new Replacer(this);
-
-		// this.serverProcessor = new ServerProcessor(this);
-		this.umlProcessor = new LocalProcessor(this);
+		this.localProcess = new LocalProcessor(this);
+		this.serverProcessor = new ServerProcessor(this);
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SettingTab(this.app, this));
 
@@ -107,7 +106,7 @@ export default class MyPlugin extends Plugin {
 		//正则
 		let match;
 
-		const regex = /```puml\n([\s\S]*?)\n```/g;
+		const regex = /```(puml|plantuml|puml-svg)\n([\s\S]*?)\n```/g;
 
 		// 先经过 PlantUML 处理一遍
 		while ((match = regex.exec(content)) !== null) {
@@ -151,6 +150,14 @@ export default class MyPlugin extends Plugin {
 		new Notice('已复制到剪切板🍺🍺🍺');
 	}
 
+	// 获取当前的 UML 处理器
+	getPlantUmlProcessor(): PlantUMLProcessor {
+		if (this.settings.localJar.length > 0) {
+			return this.localProcess;
+		}
+		return this.serverProcessor;
+	}
+
 	/**
 	 * 替换 PlantUML 的内容
 	 * 
@@ -158,21 +165,17 @@ export default class MyPlugin extends Plugin {
 	 * @param content 
 	 * @param match 
 	 */
-	async replacePlantUML(view: MarkdownView, content: string, match: RegExpExecArray) : Promise<string> {
+	async replacePlantUML(view: MarkdownView, content: string, match: RegExpExecArray): Promise<string> {
 		// console.log("match[0]: " + match[0]);
-		let plantumlContent =  match[1];
+		// console.log("match[1]: " + match[1]);
+		// console.log("match[2]: " + match[2]);
+		let plantumlContent = match[2];
 		log("replacePlantUML plantumlContent: \n" + plantumlContent);
 		// console.log("match[2]: " + match[2]);
-		let convertContent = await this.umlProcessor.png(plantumlContent);
+		let convertContent = await this.getPlantUmlProcessor().png(plantumlContent);
 
-		let image = ``;
-		
-		if (convertContent.startsWith("http")) {
-			image = `![](${convertContent})`;
-		} else {
-			image = `![](data:image/png;base64,${convertContent})`;
-		}
-		
+		let image = `![](${convertContent})`;
+
 		content = content.replace(
 			match[0],
 			image // 注意这里的反引号，它是字符串模板的标志
@@ -314,7 +317,7 @@ class SettingTab extends PluginSettingTab {
 					this.plugin.settings.hasIcon = value;
 					value ? this.plugin.ribbonIconEl.show() : this.plugin.ribbonIconEl.hide()
 					await this.plugin.saveSettings();
-				}))
+				}));
 
 		new Setting(containerEl)
 			.setName('是否需要图片描述')
@@ -324,7 +327,27 @@ class SettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.needImageDesc = value;
 					await this.plugin.saveSettings();
-				}))
+				}));
+		new Setting(containerEl)
+			.setName('PlantUML Local Jar')
+			.setDesc('本地 PlantUML Jar 包路径。')
+			.addText(text => text
+				.setValue(this.plugin.settings.localJar)
+				.onChange(async (value) => {
+					this.plugin.settings.localJar = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('PlantUML Server Url')
+			.setDesc('服务端 PlantUML URL 地址。')
+			.addText(text => text
+				.setValue(this.plugin.settings.plantUmlServerUrl)
+				.onChange(async (value) => {
+					this.plugin.settings.plantUmlServerUrl = value;
+					await this.plugin.saveSettings();
+				}));
+
 	}
 }
 

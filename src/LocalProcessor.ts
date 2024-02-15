@@ -35,7 +35,7 @@ export class LocalProcessor implements PlantUMLProcessor {
         const encodedDiagram = plantuml.encode(source);
         const item: string | null = await localforage.getItem('png-' + encodedDiagram);
         if(item) {
-            return item;
+            return `data:image/png;base64,${item}`;
         }
         const path = this.plugin.replacer.getPath(null);
         const image = await this.generateLocalImage(source, OutputType.PNG, path);
@@ -43,7 +43,7 @@ export class LocalProcessor implements PlantUMLProcessor {
         await localforage.setItem('png-' + encodedDiagram, image);
      
         // console.log("LocalProcessor png: " + image)
-        return image
+        return `data:image/png;base64,${image}`;
     }
 
 
