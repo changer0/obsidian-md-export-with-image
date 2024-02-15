@@ -353,11 +353,6 @@ class SettingTab extends PluginSettingTab {
 
 //当前日志
 function log(msg: string) {
-	//TODO 临时
-	if (!msg.contains("replacePlantUML")) {
-		return;
-	}
-	//TODO 临时
 	console.log("MD_EXPORT: " + msg)
 }
 //获取Byte
