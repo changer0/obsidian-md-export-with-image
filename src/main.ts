@@ -7,6 +7,9 @@ import { ServerProcessor } from './ServerProcessor';
 import { PlantUMLProcessor } from './PlantUMLProcessor';
 import { Replacer } from './functions';
 import { LocalProcessor } from './LocalProcessor';
+import { LoadingModal } from './LoadingModal';
+
+import { CopyExcalidrawHelper as CopyExcalidrawHelper } from './CopyExcalidrawHelper';
 // import path from 'path';
 
 // Remember to rename these classes and interfaces!
@@ -43,12 +46,17 @@ export default class MyPlugin extends Plugin {
 	serverProcessor: PlantUMLProcessor;
 	// Local UML Processor
 	localProcess: PlantUMLProcessor;
-
+	//puml used
 	replacer: Replacer;
+	//loading
+	loadingModal: LoadingModal;
+	//copyExcalidrawHelper
+	copyExcalidrawHelper: CopyExcalidrawHelper;
 
 	async onload() {
 		let that = this
 		await this.loadSettings();
+		this.loadingModal = new LoadingModal(this.app);
 		this.replacer = new Replacer(this);
 		this.localProcess = new LocalProcessor(this);
 		this.serverProcessor = new ServerProcessor(this);
@@ -64,7 +72,7 @@ export default class MyPlugin extends Plugin {
 			'点击复制转换后的MD内容到剪切板', // 图标的提示信息，当鼠标悬停在图标上时显示
 			async () => {
 				log('点击导出按钮');
-				this.convertAndCopyToClipboard()
+				this.convertAndCopyToClipboardWithLoading()
 			}
 		);
 
@@ -73,6 +81,9 @@ export default class MyPlugin extends Plugin {
 
 		this.settings.hasIcon ? this.ribbonIconEl.show() : this.ribbonIconEl.hide();
 
+		this.copyExcalidrawHelper = new CopyExcalidrawHelper(this);
+
+
 		//开启命令
 		this.addCommand({
 			id: "md-export-with-image",
@@ -80,13 +91,25 @@ export default class MyPlugin extends Plugin {
 			callback: () => {
 				//console.log("Hey, you!");
 				log('command called !');
-				this.convertAndCopyToClipboard()
+				this.convertAndCopyToClipboardWithLoading()
 			},
 		});
+
 	}
 
+
 	// 转换MD文件并复制到剪切板
-	async convertAndCopyToClipboard() {
+	async convertAndCopyToClipboardWithLoading() {
+
+		this.loadingModal.open();
+		try {
+			await this.realConvertAndCopyToClipboard();
+		} finally {
+			this.loadingModal.close();
+		}
+	}
+
+	async realConvertAndCopyToClipboard() {
 		new Notice('正在转码中，请稍等...');
 
 		// 获取当前激活的文件的视图
@@ -101,7 +124,7 @@ export default class MyPlugin extends Plugin {
 		}
 
 		// 获取当前激活的文件的内容，你可以选择使用 Markdown 源码或渲染后的文本
-		let content = view.data; // Markdown 源码
+		let markdown = view.data; // Markdown 源码
 
 		//正则
 		let match;
@@ -109,13 +132,40 @@ export default class MyPlugin extends Plugin {
 		const regex = /```(puml|plantuml|puml-svg)\n([\s\S]*?)\n```/g;
 
 		// 先经过 PlantUML 处理一遍
-		while ((match = regex.exec(content)) !== null) {
-			content = await this.replacePlantUML(
+		while ((match = regex.exec(markdown)) !== null) {
+			markdown = await this.replacePlantUML(
 				view,
-				content,
+				markdown,
 				match
 			)
 		}
+
+		// 特别注意，PlantUML 无需经过以下处理！
+
+		//--------------------------------------------------------
+		// 避免代码块中的内容被污染，处理步骤1开始
+		// 1. 标记代码块和行内代码
+		const codeBlocks: string[] = [];
+		const inlineCodes: string[] = [];
+		let counter = 0;
+
+		// 替换代码块
+		markdown = markdown.replace(/```[\s\S]*?```/g, (match) => {
+			const placeholder = `<<codeblock_${counter++}>>`;
+			codeBlocks.push(match);
+			return placeholder;
+		});
+
+		// 替换行内代码
+		markdown = markdown.replace(/`.*?`/g, (match) => {
+			const placeholder = `<<inlinecode_${counter++}>>`;
+			inlineCodes.push(match);
+			return placeholder;
+		});
+
+		// 避免代码块中的内容被污染，处理步骤1结束
+		//--------------------------------------------------------
+
 
 
 		//这是针对非标准的 Wiki 形式的图片
@@ -123,10 +173,10 @@ export default class MyPlugin extends Plugin {
 		const regex1 = /!\[\[(.+?\.(png|jpg|jpeg))\]\]/g;
 
 		// 对于每一个匹配的结果 进行处理
-		while ((match = regex1.exec(content)) !== null) {
-			content = this.replaceMDConentWiki(
+		while ((match = regex1.exec(markdown)) !== null) {
+			markdown = this.replaceMDConentWiki(
 				view,
-				content,
+				markdown,
 				match
 			)
 		}
@@ -135,20 +185,42 @@ export default class MyPlugin extends Plugin {
 		// 使用正则表达式，匹配文件内容中的 ! 格式的内容
 		//const regex2 = /!\[\]\((.+?\.(png|jpg|jpeg))\)/g; // 注意这里的括号和或运算符
 		const regex2 = /\!\[(.*?)\]\((.+?\.(jpg|png|jpeg))\)/g;
-		while ((match = regex2.exec(content)) !== null) {
-			content = this.replaceMDConentNormal(
+		while ((match = regex2.exec(markdown)) !== null) {
+			markdown = this.replaceMDConentNormal(
 				view,
-				content,
+				markdown,
 				match,
 			)
 		}
+		//处理绘图文件！
+		markdown = await this.handleExcalidraw(view.file?.path ?? "", markdown);
 
+
+
+		//--------------------------------------------------------
+		// 避免代码块中的内容被污染，处理步骤2开始
+		// 2. 恢复代码块和行内代码
+		markdown = markdown.replace(/<<codeblock_(\d+)>>/g, (match, number) => codeBlocks[number]);
+		markdown = markdown.replace(/<<inlinecode_(\d+)>>/g, (match, number) => inlineCodes[number]);
+		// 避免代码块中的内容被污染，处理步骤2结束
+		//--------------------------------------------------------
 
 		// 将替换后的文件内容复制到粘贴板中
-		await navigator.clipboard.writeText(content);
+		await navigator.clipboard.writeText(markdown);
 		// 弹出一个通知，提示用户已经复制成功
 		new Notice('已复制到剪切板🍺🍺🍺');
 	}
+
+	/**
+	 * 处理 Excalidraw 文件
+	 * @param view 
+	 * @param content 
+	 * @returns 
+	 */
+	async handleExcalidraw(path: string, content: string): Promise<string> {
+		return await this.copyExcalidrawHelper.handleDocument(content, path);
+	}
+
 
 	// 获取当前的 UML 处理器
 	getPlantUmlProcessor(): PlantUMLProcessor {
@@ -171,6 +243,10 @@ export default class MyPlugin extends Plugin {
 		// console.log("match[2]: " + match[2]);
 		let plantumlContent = match[2];
 		log("replacePlantUML plantumlContent: \n" + plantumlContent);
+		if (plantumlContent.length == 0) {
+			//不再处理了
+			return content;
+		}
 		// console.log("match[2]: " + match[2]);
 		let convertContent = await this.getPlantUmlProcessor().png(plantumlContent);
 
