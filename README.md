@@ -4,7 +4,7 @@
 
 ### 1.2.0
 
-- 重大升级，支持 Excalidraw 格式
+- 重大升级，支持 Excalidraw 格式，注意需要调整Excalidraw的设置：嵌入到Markdown文档中的绘图 -> 预览图格式 -> 调节为 PNG 格式，否则 copy 出来的文件非常大！
 
 ### 1.1.0
 
