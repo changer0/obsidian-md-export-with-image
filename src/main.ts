@@ -147,18 +147,18 @@ export default class MyPlugin extends Plugin {
 		// 1. 标记代码块和行内代码
 		const codeBlocks: string[] = [];
 		const inlineCodes: string[] = [];
-		let counter = 0;
-
+		let codeblock_counter = 0;
+		let inlinecode_counter = 0;
 		// 替换代码块
 		markdown = markdown.replace(/```[\s\S]*?```/g, (match) => {
-			const placeholder = `<<codeblock_${counter++}>>`;
+			const placeholder = `<<codeblock_${codeblock_counter++}>>`;
 			codeBlocks.push(match);
 			return placeholder;
 		});
 
 		// 替换行内代码
 		markdown = markdown.replace(/`.*?`/g, (match) => {
-			const placeholder = `<<inlinecode_${counter++}>>`;
+			const placeholder = `<<inlinecode_${inlinecode_counter++}>>`;
 			inlineCodes.push(match);
 			return placeholder;
 		});
