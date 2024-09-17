@@ -170,7 +170,7 @@ export default class MyPlugin extends Plugin {
 
 		//这是针对非标准的 Wiki 形式的图片
 		// 使用正则表达式，匹配文件内容中的 [[xxx.png]] 格式的内容
-		const regex1 = /!\[\[(.+?\.(png|jpg|jpeg))\]\]/g;
+		const regex1 = /!\[\[(.+?\.(png|jpg|jpeg|gif))\]\]/g;
 
 		// 对于每一个匹配的结果 进行处理
 		while ((match = regex1.exec(markdown)) !== null) {
@@ -184,7 +184,7 @@ export default class MyPlugin extends Plugin {
 		//针对标准的 MD 格式
 		// 使用正则表达式，匹配文件内容中的 ! 格式的内容
 		//const regex2 = /!\[\]\((.+?\.(png|jpg|jpeg))\)/g; // 注意这里的括号和或运算符
-		const regex2 = /\!\[(.*?)\]\((.+?\.(jpg|png|jpeg))\)/g;
+		const regex2 = /\!\[(.*?)\]\((.+?\.(jpg|png|jpeg|gif))\)/g;
 		while ((match = regex2.exec(markdown)) !== null) {
 			markdown = this.replaceMDConentNormal(
 				view,
@@ -225,8 +225,10 @@ export default class MyPlugin extends Plugin {
 	// 获取当前的 UML 处理器
 	getPlantUmlProcessor(): PlantUMLProcessor {
 		if (this.settings.localJar.length > 0) {
+			log("使用 PlantUML localProcess")
 			return this.localProcess;
 		}
+		log("使用 PlantUML serverProcessor")
 		return this.serverProcessor;
 	}
 
@@ -291,10 +293,13 @@ export default class MyPlugin extends Plugin {
 		const base64 = buffer.toString('base64');
 		//图片描述
 		const desc = this.settings.needImageDesc ? match[1] : ""
+		//获取文件后缀
+		const fileExtension = getFileExtension(filename);
+		log('fileExtension: ' + fileExtension);
 		// 将文件内容中的 ![[xxx.png]] 替换为 !xxx.png
 		content = content.replace(
 			match[0],
-			`![${desc}](data:image/png;base64,${base64})` // 注意这里的反引号，它是字符串模板的标志
+			`![${desc}](data:image/${fileExtension};base64,${base64})` // 注意这里的反引号，它是字符串模板的标志
 		);
 		log('图片完成 Base64 转换，length: ' + base64.length);
 		return content
@@ -327,10 +332,13 @@ export default class MyPlugin extends Plugin {
 		const base64 = buffer.toString('base64');
 		//图片描述
 		const desc = this.settings.needImageDesc ? filename : ""
+		//获取文件后缀
+		const fileExtension = getFileExtension(filename);
+		log('fileExtension: ' + fileExtension);
 		// 将文件内容中的 ![[xxx.png]] 替换为 !xxx.png
 		content = content.replace(
 			match[0],
-			`![${desc}](data:image/png;base64,${base64})` // 注意这里的反引号，它是字符串模板的标志
+			`![${desc}](data:image/${fileExtension};base64,${base64})` // 注意这里的反引号，它是字符串模板的标志
 		);
 		log('图片完成 Base64 转换，length: ' + base64.length);
 		return content
@@ -439,3 +447,8 @@ function formatBytes(bytes: number, decimals: number = 2): string {
 	const i = Math.floor(Math.log(bytes) / Math.log(k));
 	return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i];
 }
+
+function getFileExtension(filename: string): string {
+	const parts = filename.split('.');
+	return parts.length > 1 ? parts[parts.length - 1] : '';
+  }
