@@ -10,6 +10,8 @@ import { LocalProcessor } from './LocalProcessor';
 import { LoadingModal } from './LoadingModal';
 
 import { CopyExcalidrawHelper as CopyExcalidrawHelper } from './CopyExcalidrawHelper';
+import { checkMarkdownFormatIssuesForBold } from './checkMarkdown';
+import { DialogModal } from './DialogModal';
 // import path from 'path';
 
 // Remember to rename these classes and interfaces!
@@ -126,6 +128,9 @@ export default class MyPlugin extends Plugin {
 		// 获取当前激活的文件的内容，你可以选择使用 Markdown 源码或渲染后的文本
 		let markdown = view.data; // Markdown 源码
 
+		// 检查markdown格式是否正确并且弹窗提醒
+		this.checkMarkdownFormatIssuesAndWarn(markdown);
+
 		//正则
 		let match;
 
@@ -209,6 +214,35 @@ export default class MyPlugin extends Plugin {
 		await navigator.clipboard.writeText(markdown);
 		// 弹出一个通知，提示用户已经复制成功
 		new Notice('已复制到剪切板🍺🍺🍺');
+	}
+
+	/**
+	 *  检查 Markdown 格式问题，一般是加粗问题
+	 * @param markdownText 
+	 */
+	checkMarkdownFormatIssuesAndWarn(markdownText: string) {
+		const issues = checkMarkdownFormatIssuesForBold(markdownText);
+
+		// 处理返回的结果
+		if (issues.length > 0) {
+			log('[checkMarkdownFormatIssuesAndWarn]发现以下可能存在格式问题的行：');
+			let tempContent = "";
+			
+			tempContent = "加粗符号（**）检查：\n";
+			issues.forEach((item) => {
+				tempContent += `第 ${item.lineNumber} 行: ${item.content} \n`
+				log(`[checkMarkdownFormatIssuesAndWarn]${tempContent}`);
+			});
+
+
+			new DialogModal(this.app, {
+				title: '发现以下可能存在格式问题的行，请检查：',
+				content: tempContent
+			}).open();
+			
+		} else {
+			log('[checkMarkdownFormatIssuesAndWarn]未发现格式问题。');
+		}
 	}
 
 	/**
@@ -461,4 +495,4 @@ function formatBytes(bytes: number, decimals: number = 2): string {
 function getFileExtension(filename: string): string {
 	const parts = filename.split('.');
 	return parts.length > 1 ? parts[parts.length - 1] : '';
-  }
+}
