@@ -30,7 +30,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 	plantUmlServerUrl: "https://www.plantuml.com/plantuml",
 	localJar: '',
 	javaPath: 'java',
-	dotPath: 'dot',
+	dotPath: '/opt/homebrew/bin/dot',
 }
 
 export default class MyPlugin extends Plugin {
@@ -413,12 +413,22 @@ class SettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
-			.setName('PlantUML Local Jar')
+			.setName('PlantUML Local Path')
 			.setDesc('本地 PlantUML Jar 包路径。')
 			.addText(text => text
 				.setValue(this.plugin.settings.localJar)
 				.onChange(async (value) => {
 					this.plugin.settings.localJar = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('PlantUML Dot Path')
+			.setDesc('本地 PlantUML Dot 包路径。')
+			.addText(text => text
+				.setValue(this.plugin.settings.dotPath)
+				.onChange(async (value) => {
+					this.plugin.settings.dotPath = value;
 					await this.plugin.saveSettings();
 				}));
 

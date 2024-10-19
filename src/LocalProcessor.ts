@@ -32,7 +32,9 @@ export class LocalProcessor implements PlantUMLProcessor {
     //PNG 格式
     png = async(source: string): Promise<string> => {
 
+        // console.log("LocalProcessor png: " + source)
         const encodedDiagram = plantuml.encode(source);
+        // 先从缓存中取
         const item: string | null = await localforage.getItem('png-' + encodedDiagram);
         if(item) {
             return `data:image/png;base64,${item}`;
@@ -57,7 +59,7 @@ export class LocalProcessor implements PlantUMLProcessor {
     async generateLocalImage(source: string, type: OutputType, path: string): Promise<string> {
         const {ChildProcess, exec} = require('child_process');
         const args = this.resolveLocalJarCmd().concat(['-t' + type, '-pipe']);
-
+        //console.log("这里面：LocalProcessor: " + JSON.stringify(args));
         let child: typeof ChildProcess;
         if (type === OutputType.PNG) {
             child = exec(args.join(" "), {encoding: 'binary', cwd: path});

@@ -2,6 +2,10 @@
 
 > 解决 Obsidian 中的 Markdown 文件如果要复制出去图片展示问题，自动转换为标准的 Markdown 语法，自动将图片转为 Base64 格式，无需图床！
 
+### 1.4.0
+
+- PlantUML 支持动态配置 Dot 路径
+
 ### 1.3.0
 
 - 支持 Gif 图
