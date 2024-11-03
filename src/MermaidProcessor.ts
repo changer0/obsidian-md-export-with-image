@@ -44,9 +44,20 @@ export class MermaidProcessor {
         }
     }
 
-    private convertSvgToBase64(svg: string): string {
-        // 将 SVG 字符串转换为 Base64
-        const base64 = btoa(svg);
-        return `data:image/svg+xml;base64,${base64}`;
+    private async convertSvgToBase64(svg: string): Promise<string> {
+        // 创建一个 Blob 对象
+        const blob = new Blob([svg], { type: 'image/svg+xml' });
+        const reader = new FileReader();
+    
+        return new Promise((resolve, reject) => {
+            reader.onloadend = () => {
+                // 读取 Blob 结果并返回 Base64 字符串
+                const base64 = reader.result as string;
+                resolve(base64);
+            };
+            reader.onerror = reject; // 处理错误
+            reader.readAsDataURL(blob); // 读取 Blob 为 Data URL
+        });
     }
+    
 }

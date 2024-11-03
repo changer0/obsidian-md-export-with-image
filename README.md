@@ -3,6 +3,13 @@
 > [!tip]
 > 解决 Obsidian 中的 Markdown 文件如果要复制出去图片展示问题，自动转换为标准的 Markdown 语法，自动将图片转为 Base64 格式，无需图床！
 
+### 1.6.1
+
+优化 SVG 转 Base64 的方法
+
+- 使用 Blob 对象和 FileReader 替代直接使用 btoa 方法
+- 改为异步方法，使用 Promise 处理结果
+- 增加错误处理机制
 
 ### 1.6.0
 
