@@ -1,6 +1,12 @@
 # Obsidian Markdown Export
 
+> [!tip]
 > 解决 Obsidian 中的 Markdown 文件如果要复制出去图片展示问题，自动转换为标准的 Markdown 语法，自动将图片转为 Base64 格式，无需图床！
+
+
+### 1.6.0
+
+- 支持 Mermaid 格式
 
 ### 1.5.0
 

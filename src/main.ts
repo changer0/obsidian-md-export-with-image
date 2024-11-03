@@ -2,9 +2,9 @@ import { App, Editor, FileSystemAdapter, MarkdownView, Modal, Notice, Plugin, Pl
 
 // 导入 Node.js 的 fs 和 path 模块
 import * as fs from 'fs';
-import { connect } from 'http2';
 import { ServerProcessor } from './ServerProcessor';
 import { PlantUMLProcessor } from './PlantUMLProcessor';
+import { MermaidProcessor } from './MermaidProcessor';
 import { Replacer } from './functions';
 import { LocalProcessor } from './LocalProcessor';
 import { LoadingModal } from './LoadingModal';
@@ -134,10 +134,10 @@ export default class MyPlugin extends Plugin {
 		//正则
 		let match;
 
-		const regex = /```(puml|plantuml|puml-svg)\n([\s\S]*?)\n```/g;
+		const regexPlantuml = /```(puml|plantuml|puml-svg)\n([\s\S]*?)\n```/g;
 
 		// 先经过 PlantUML 处理一遍
-		while ((match = regex.exec(markdown)) !== null) {
+		while ((match = regexPlantuml.exec(markdown)) !== null) {
 			markdown = await this.replacePlantUML(
 				view,
 				markdown,
@@ -145,7 +145,17 @@ export default class MyPlugin extends Plugin {
 			)
 		}
 
-		// 特别注意，PlantUML 无需经过以下处理！
+		const regexMermaid = /```mermaid\n([\s\S]*?)\n```/g;
+		// 先经过 Mermaid 处理一遍
+		while ((match = regexMermaid.exec(markdown)) !== null) {
+			markdown = await this.replaceMermaid(
+				view,
+				markdown,
+				match
+			);
+		}
+
+		// 特别注意，PlantUML 无需经过以下处理！，下面本身就在处理图片相关的逻辑
 
 		//--------------------------------------------------------
 		// 避免代码块中的内容被污染，处理步骤1开始
@@ -243,6 +253,36 @@ export default class MyPlugin extends Plugin {
 		} else {
 			log('[checkMarkdownFormatIssuesAndWarn]未发现格式问题。');
 		}
+	}
+
+	/**
+	 * 替换 Mermaid 的内容
+	 * 
+	 * @param view 
+	 * @param content 
+	 * @param match 
+	 */
+	async replaceMermaid(view: MarkdownView, content: string, match: RegExpExecArray): Promise<string> {
+		let mermaidContent = match[1];
+		log("replaceMermaid mermaidContent: \n" + mermaidContent);
+		if (mermaidContent.length == 0) {
+			// 不再处理了
+			return content;
+		}
+
+		const processor = new MermaidProcessor();
+		
+		// 调用 Mermaid 渲染器
+		let convertContent = await processor.svgToBase64(mermaidContent);
+
+		let image = `![](${convertContent})`;
+
+		content = content.replace(
+			match[0],
+			image // 注意这里的反引号，它是字符串模板的标志
+		);
+		// 替换时使用 match[0]
+		return content;
 	}
 
 	/**
